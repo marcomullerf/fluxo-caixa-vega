@@ -95,10 +95,10 @@
 
         <!-- Controles Globais e Ações -->
         <div class="flex flex-wrap items-center gap-2.5">
-          <!-- Input Saldo Inicial Pressuposto (Agosto -> Setembro) -->
+          <!-- Input Saldo Inicial (Agosto -> Setembro) -->
           <div class="bg-white/10 backdrop-blur-sm border border-white/15 rounded-xl px-3 py-1.5 flex items-center gap-2">
             <label for="initialBalanceInput" class="text-xs text-slate-200 font-medium whitespace-nowrap" title="Saldo transportado de Agosto/2026">
-              Saldo Pressuposto (Ago):
+              Saldo (Ago):
             </label>
             <div class="relative flex items-center">
               <span class="text-xs font-semibold text-amber-300 mr-1">R$</span>
@@ -602,7 +602,7 @@
 
     const STORAGE_KEY_ENTRIES = 'vega_calcados_fluxo_entries_v1';
     const STORAGE_KEY_INITIAL = 'vega_calcados_fluxo_initial_v1';
-    const DEFAULT_INITIAL_BALANCE = 28500.00; // Saldo inicial pressuposto transportado de Agosto/2026
+    const DEFAULT_INITIAL_BALANCE = 28500.00; // Saldo inicial transportado de Agosto/2026
 
     // Estado Global da Aplicação
     let state = {
@@ -1005,7 +1005,7 @@
     function render() {
       const summary = calculateAllMonthsSummary();
 
-      // Atualizar input do saldo inicial pressuposto
+      // Atualizar input do saldo inicial
       const initInput = document.getElementById('initialBalanceInput');
       if (document.activeElement !== initInput) {
         initInput.value = state.initialBalance.toFixed(2);
@@ -1047,7 +1047,7 @@
     function renderKPIs(data) {
       document.getElementById('kpiPrevBalance').textContent = formatCurrency(data.prevBalance);
       const prevSubMap = {
-        '2026-09': 'Saldo pressuposto de Agosto/2026',
+        '2026-09': 'Saldo de Agosto/2026',
         '2026-10': 'Transportado de Setembro/2026',
         '2026-11': 'Transportado de Outubro/2026'
       };
@@ -1227,7 +1227,7 @@
 
       // Atualiza KPIs superiores com os dados do Trimestre
       document.getElementById('kpiPrevBalance').textContent = formatCurrency(s09.prevBalance);
-      document.getElementById('kpiPrevSub').textContent = 'Saldo pressuposto inicial (Set)';
+      document.getElementById('kpiPrevSub').textContent = 'Saldo inicial (Set)';
       document.getElementById('kpiInflows').textContent = formatCurrency(totalInflows);
       document.getElementById('kpiInflowsCount').textContent = `${s09.inflowCount + s10.inflowCount + s11.inflowCount} entradas no trimestre`;
       document.getElementById('kpiOutflows').textContent = formatCurrency(totalOutflows);
@@ -1463,7 +1463,7 @@
         });
       });
 
-      // Alteração do Saldo Pressuposto Inicial
+      // Alteração do Saldo Inicial
       document.getElementById('initialBalanceInput').addEventListener('input', (e) => {
         const val = parseFloat(e.target.value);
         state.initialBalance = isNaN(val) ? 0 : val;
