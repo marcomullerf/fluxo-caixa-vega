@@ -577,7 +577,7 @@
               Subtotal filtrado — Entradas: R$ 0,00 | Saídas: R$ 0,00
             </div>
             <div class="text-slate-400">
-              Sincronizado automaticamente com o Extrato Bancário PJ
+              Sincronizado automaticamente com o Extrato Bancário PJ e Nuvem
             </div>
           </div>
         </div>
@@ -907,14 +907,18 @@
     /**
      * ============================================================================
      * SIMULADOR DE FLUXO DE CAIXA — VEGA CALÇADOS E ACESSÓRIOS
-     * Com Exportação PDF (A4) e Portal Bancário Protegido por Senha (sec2026)
+     * Com Sincronização em Nuvem (Firebase Realtime Database), Exportação PDF (A4)
+     * e Portal Bancário Protegido por Senha (sec2026)
      * ============================================================================
      */
 
+    const FIREBASE_DB_URL = 'https://fluxo-53342-default-rtdb.firebaseio.com';
     const STORAGE_KEY_ENTRIES = 'vega_calcados_fluxo_entries_v1';
     const STORAGE_KEY_INITIAL = 'vega_calcados_fluxo_initial_v1';
     const DEFAULT_INITIAL_BALANCE = 28500.00;
     const BANK_PORTAL_PASSWORD = 'sec2026';
+
+    let syncDebounceTimer = null;
 
     let state = {
       activeTab: '2026-09',
@@ -1202,10 +1206,11 @@
 
     /**
      * ============================================================================
-     * PERSISTÊNCIA E CÁLCULOS FINANCEIROS ENCADEADOS
+     * PERSISTÊNCIA LOCAL + SINCRONIZAÇÃO EM NUVEM (FIREBASE)
      * ============================================================================
      */
-    function loadState() {
+    async function loadState() {
+      // 1. Carrega primeiro do armazenamento local para abertura imediata
       try {
         const savedInitial = localStorage.getItem(STORAGE_KEY_INITIAL);
         const savedEntries = localStorage.getItem(STORAGE_KEY_ENTRIES);
@@ -1218,21 +1223,72 @@
           state.entries = Array.isArray(parsed) && parsed.length > 0 ? parsed : generateDefaultDataset();
         } else {
           state.entries = generateDefaultDataset();
-          saveState();
         }
       } catch (err) {
-        console.error('Erro ao carregar dados:', err);
+        console.error('Erro ao carregar dados locais:', err);
         state.initialBalance = DEFAULT_INITIAL_BALANCE;
         state.entries = generateDefaultDataset();
       }
+
+      render();
+
+      // 2. Sincroniza com o Firebase Realtime Database para manter dados entre dispositivos
+      try {
+        const response = await fetch(`${FIREBASE_DB_URL}/vega_fluxo.json`);
+        if (!response.ok) throw new Error('Falha ao consultar nuvem');
+
+        const cloudData = await response.json();
+
+        if (cloudData && Array.isArray(cloudData.entries) && cloudData.entries.length > 0) {
+          const cloudInit = parseFloat(cloudData.initialBalance);
+          state.initialBalance = !isNaN(cloudInit) ? cloudInit : DEFAULT_INITIAL_BALANCE;
+          state.entries = cloudData.entries;
+
+          localStorage.setItem(STORAGE_KEY_INITIAL, String(state.initialBalance));
+          localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(state.entries));
+          render();
+        } else {
+          // Primeira execução: envia os dados iniciais para o Firebase
+          await syncToCloud();
+        }
+      } catch (err) {
+        console.warn('Sincronização em nuvem indisponível no momento (usando cache local):', err);
+      }
     }
 
-    function saveState() {
+    async function syncToCloud() {
+      try {
+        await fetch(`${FIREBASE_DB_URL}/vega_fluxo.json`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            initialBalance: state.initialBalance,
+            entries: state.entries,
+            updatedAt: new Date().toISOString()
+          })
+        });
+      } catch (err) {
+        console.error('Erro ao enviar dados para o Firebase:', err);
+      }
+    }
+
+    function saveState(immediateCloud = true) {
       try {
         localStorage.setItem(STORAGE_KEY_INITIAL, String(state.initialBalance));
         localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(state.entries));
       } catch (err) {
-        console.error('Erro ao salvar dados:', err);
+        console.error('Erro ao salvar dados localmente:', err);
+      }
+
+      if (immediateCloud) {
+        clearTimeout(syncDebounceTimer);
+        syncToCloud();
+      } else {
+        // Evita excesso de requisições enquanto digita no campo de saldo inicial
+        clearTimeout(syncDebounceTimer);
+        syncDebounceTimer = setTimeout(() => {
+          syncToCloud();
+        }, 600);
       }
     }
 
@@ -1945,9 +2001,9 @@
         `Deseja remover "${item.description}" (${formatCurrency(item.amount)}) do fluxo de caixa?`,
         () => {
           state.entries = state.entries.filter(e => e.id !== id);
-          saveState();
+          saveState(true);
           render();
-          showToast('Lançamento removido e extrato bancário atualizado.', 'warning');
+          showToast('Lançamento removido e salvo na nuvem.', 'warning');
         }
       );
     };
@@ -1998,7 +2054,6 @@
      */
     document.addEventListener('DOMContentLoaded', () => {
       loadState();
-      render();
 
       // Restaura o modo padrão de impressão após fechar o diálogo de impressão do navegador
       window.addEventListener('afterprint', () => {
@@ -2018,7 +2073,7 @@
       document.getElementById('initialBalanceInput').addEventListener('input', (e) => {
         const val = parseFloat(e.target.value);
         state.initialBalance = isNaN(val) ? 0 : val;
-        saveState();
+        saveState(false);
         render();
       });
 
@@ -2104,12 +2159,12 @@
           const idx = state.entries.findIndex(item => item.id === id);
           if (idx !== -1) {
             state.entries[idx] = { id, month: finalMonth, date, description, type, category, payment, amount };
-            showToast('Lançamento atualizado e extrato sincronizado!');
+            showToast('Lançamento atualizado e salvo na nuvem!');
           }
         } else {
           const newId = `vega-custom-${Date.now()}`;
           state.entries.push({ id: newId, month: finalMonth, date, description, type, category, payment, amount });
-          showToast('Lançamento adicionado e sincronizado com o extrato!');
+          showToast('Lançamento adicionado e salvo na nuvem!');
         }
 
         if (state.activeTab !== 'consolidado') {
@@ -2117,7 +2172,7 @@
         }
         state.bankSelectedMonth = finalMonth;
 
-        saveState();
+        saveState(true);
         closeEntryModal();
         render();
       });
@@ -2161,9 +2216,9 @@
           () => {
             state.initialBalance = DEFAULT_INITIAL_BALANCE;
             state.entries = generateDefaultDataset();
-            saveState();
+            saveState(true);
             render();
-            showToast('Dados originais restaurados com sucesso!');
+            showToast('Dados originais restaurados na nuvem!');
           }
         );
       });
