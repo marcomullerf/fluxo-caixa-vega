@@ -6,7 +6,7 @@
   <title>Vega Calçados e Acessórios | Simulador de Fluxo de Caixa</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts: Inter & JetBrains Mono (para códigos bancários) -->
+  <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -39,7 +39,6 @@
       background-color: #f1f5f9;
       color: #0f172a;
     }
-    /* Barra de rolagem sutil para tabelas */
     .table-container::-webkit-scrollbar {
       height: 8px;
       width: 8px;
@@ -55,7 +54,6 @@
     .table-container::-webkit-scrollbar-thumb:hover {
       background: #94a3b8;
     }
-    /* Animação suave para modal e notificações */
     @keyframes fadeInScale {
       from { opacity: 0; transform: scale(0.97); }
       to { opacity: 1; transform: scale(1); }
@@ -72,9 +70,6 @@
       animation: shake 0.35s ease-in-out;
     }
 
-    /* ========================================================================
-       REGRAS DE IMPRESSÃO / EXPORTAÇÃO PDF EM FOLHA A4
-       ======================================================================== */
     @page {
       size: A4 portrait;
       margin: 12mm 12mm 14mm 12mm;
@@ -96,7 +91,6 @@
         display: none !important;
       }
 
-      /* MODO 1: IMPRESSÃO DO RELATÓRIO GERENCIAL DO SISTEMA EM A4 */
       body.print-mode-system #appShell {
         display: flex !important;
       }
@@ -141,7 +135,6 @@
         break-inside: avoid;
       }
 
-      /* MODO 2: IMPRESSÃO EXCLUSIVA DO EXTRATO BANCÁRIO REALISTA EM A4 */
       body.print-mode-statement #appShell,
       body.print-mode-statement #toastContainer,
       body.print-mode-statement #entryModal,
@@ -167,6 +160,9 @@
   <!-- Toast / Notificação Flutuante -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-[60] flex flex-col gap-2 pointer-events-none no-print"></div>
 
+  <!-- Input oculto para Importação de Backup JSON -->
+  <input type="file" id="jsonFileInput" accept=".json,application/json" class="hidden" />
+
   <!-- ========================================================================
        SHELL PRINCIPAL DO SISTEMA DE FLUXO DE CAIXA
        ======================================================================== -->
@@ -190,6 +186,16 @@
                 <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
                   Exercício 2026
                 </span>
+                <!-- Indicador de Status da Nuvem -->
+                <button
+                  id="cloudStatusBadge"
+                  type="button"
+                  title="Clique para forçar atualização da nuvem agora"
+                  class="no-print inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/30 hover:bg-amber-500/30 transition cursor-pointer"
+                >
+                  <span id="cloudStatusDot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                  <span id="cloudStatusText">Conectando à Nuvem...</span>
+                </button>
               </div>
               <p class="text-slate-300 text-xs sm:text-sm mt-0.5">Simulador de Fluxo de Caixa — Gestão Financeira & Planejamento Operacional</p>
             </div>
@@ -246,6 +252,18 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
               Novo Lançamento
+            </button>
+
+            <!-- Botão Importar Backup JSON -->
+            <button
+              id="btnImportJson"
+              class="inline-flex items-center gap-1.5 bg-indigo-500/25 hover:bg-indigo-500/40 text-indigo-100 font-semibold text-xs sm:text-sm px-3 py-2.5 rounded-xl border border-indigo-400/40 transition cursor-pointer"
+              title="Carregar arquivo de backup .json exportado do Firebase"
+            >
+              <svg class="w-4 h-4 text-indigo-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              </svg>
+              Importar Backup (.json)
             </button>
 
             <!-- Botão Salvar Relatório em PDF (A4) -->
@@ -313,7 +331,6 @@
 
       <!-- Cards de Indicadores (KPIs) -->
       <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4" aria-label="Indicadores Financeiros">
-        <!-- Card 1: Saldo Anterior -->
         <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/80 flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Saldo Anterior</span>
@@ -329,7 +346,6 @@
           </div>
         </div>
 
-        <!-- Card 2: Total de Entradas -->
         <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-emerald-200/80 flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-xs font-semibold uppercase tracking-wider text-emerald-700">Total de Entradas</span>
@@ -345,7 +361,6 @@
           </div>
         </div>
 
-        <!-- Card 3: Total de Saídas -->
         <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-rose-200/80 flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-xs font-semibold uppercase tracking-wider text-rose-700">Total de Saídas</span>
@@ -361,7 +376,6 @@
           </div>
         </div>
 
-        <!-- Card 4: Saldo Operacional do Mês -->
         <div id="cardOperational" class="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-4 sm:p-5 shadow-md flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-xs font-semibold uppercase tracking-wider text-emerald-100">Saldo Operacional</span>
@@ -377,7 +391,6 @@
           </div>
         </div>
 
-        <!-- Card 5: Saldo Final Acumulado -->
         <div class="bg-vega-800 text-white rounded-2xl p-4 sm:p-5 shadow-md border border-vega-700 flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-xs font-semibold uppercase tracking-wider text-amber-300">Saldo Final Caixa</span>
@@ -419,26 +432,19 @@
                   <th class="py-3.5 px-4 font-bold text-right bg-vega-50 text-vega-800">Acumulado Trimestre</th>
                 </tr>
               </thead>
-              <tbody id="consolidatedTableBody" class="divide-y divide-slate-100">
-                <!-- Preenchido via JS -->
-              </tbody>
+              <tbody id="consolidatedTableBody" class="divide-y divide-slate-100"></tbody>
             </table>
           </div>
         </div>
 
-        <!-- Gráfico Comparativo de Barras em CSS -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6">
           <h3 class="text-base font-bold text-slate-800 mb-4">Comparativo Visual: Entradas × Saídas × Saldo Operacional</h3>
-          <div id="consolidatedChart" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Preenchido via JS -->
-          </div>
+          <div id="consolidatedChart" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
         </div>
       </section>
 
       <!-- Painel Mensal: Distribuição por Classificação + Tabela Interativa -->
       <section id="monthlySection" class="space-y-6">
-
-        <!-- Resumo por Classificação -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
             <div>
@@ -450,12 +456,9 @@
               <span class="flex items-center gap-1.5 text-rose-700"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Categorias de Saída</span>
             </div>
           </div>
-          <div id="categoryBreakdown" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-            <!-- Cards/barras por categoria via JS -->
-          </div>
+          <div id="categoryBreakdown" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5"></div>
         </div>
 
-        <!-- Barra de Filtros e Controles da Tabela -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div class="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/70 space-y-4">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -483,9 +486,7 @@
               </div>
             </div>
 
-            <!-- Inputs de Filtro -->
             <div class="table-filter-bar grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <!-- Busca Textual -->
               <div class="relative">
                 <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
@@ -498,7 +499,6 @@
                 />
               </div>
 
-              <!-- Filtro Tipo -->
               <div>
                 <select
                   id="filterType"
@@ -510,7 +510,6 @@
                 </select>
               </div>
 
-              <!-- Filtro Classificação -->
               <div>
                 <select
                   id="filterCategory"
@@ -533,7 +532,6 @@
                 </select>
               </div>
 
-              <!-- Filtro Forma de Pagamento -->
               <div>
                 <select
                   id="filterPayment"
@@ -551,7 +549,6 @@
             </div>
           </div>
 
-          <!-- Tabela de Lançamentos (Sem a coluna Saldo Acumulado) -->
           <div class="table-container overflow-x-auto max-h-[640px]">
             <table class="w-full text-sm text-left border-collapse">
               <thead class="bg-slate-100 text-slate-600 text-xs uppercase tracking-wider sticky top-0 z-10 border-b border-slate-200">
@@ -565,18 +562,15 @@
                   <th class="col-actions py-3.5 px-4 font-bold text-center whitespace-nowrap">Ações</th>
                 </tr>
               </thead>
-              <tbody id="cashflowTableBody" class="divide-y divide-slate-100 bg-white">
-                <!-- Linhas geradas via JS -->
-              </tbody>
+              <tbody id="cashflowTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
             </table>
           </div>
 
-          <!-- Rodapé Resumo da Tabela Filtrada -->
           <div class="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-600">
             <div id="filteredSummaryText" class="font-medium">
               Subtotal filtrado — Entradas: R$ 0,00 | Saídas: R$ 0,00
             </div>
-            <div class="text-slate-400">
+            <div id="footerSyncInfo" class="text-slate-400">
               Sincronizado automaticamente com o Extrato Bancário PJ e Nuvem
             </div>
           </div>
@@ -584,7 +578,6 @@
       </section>
     </main>
 
-    <!-- Rodapé -->
     <footer class="bg-white border-t border-slate-200 mt-10 py-5">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
         <p><strong class="text-slate-700">Vega Calçados e Acessórios Ltda.</strong> — Simulador Gerencial de Fluxo de Caixa (Set/Out/Nov 2026).</p>
@@ -596,9 +589,7 @@
   <!-- ========================================================================
        ÁREA EXCLUSIVA PARA IMPRESSÃO DO EXTRATO BANCÁRIO REALISTA (FOLHA A4)
        ======================================================================== -->
-  <div id="bankStatementPrintArea" class="hidden font-sans text-slate-900">
-    <!-- Preenchido dinamicamente antes de chamar window.print() -->
-  </div>
+  <div id="bankStatementPrintArea" class="hidden font-sans text-slate-900"></div>
 
   <!-- ========================================================================
        MODAL 1: BLOQUEIO DE SENHA PARA ACESSO À CONTA BANCÁRIA PJ
@@ -669,8 +660,6 @@
        ======================================================================== -->
   <div id="bankPortalModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/75 backdrop-blur-sm p-2 sm:p-4 no-print">
     <div class="bg-slate-100 rounded-2xl shadow-2xl border border-slate-300 max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden modal-animate">
-
-      <!-- Barra Superior Estilo App Bancário Desktop -->
       <div class="bg-gradient-to-r from-[#07192f] via-[#0d2747] to-[#133863] text-white px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-sky-900/60 shrink-0">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-sky-400/15 border border-sky-400/30 flex items-center justify-center text-sky-300 font-extrabold text-lg">
@@ -709,7 +698,6 @@
         </div>
       </div>
 
-      <!-- Barra de Controles do Extrato Bancário -->
       <div class="bg-white px-5 py-3.5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
         <div class="flex items-center gap-3">
           <label for="bankMonthSelect" class="text-xs font-bold uppercase tracking-wider text-slate-600">Período do Extrato:</label>
@@ -731,9 +719,7 @@
         </button>
       </div>
 
-      <!-- Corpo Rolável com Pré-visualização Realista do Extrato -->
       <div class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5">
-        <!-- Cards Bancários da Conta -->
         <div class="grid grid-cols-1 sm:grid-cols-4 gap-3.5">
           <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
             <span class="text-[11px] font-bold uppercase text-slate-400">Saldo Anterior</span>
@@ -753,10 +739,7 @@
           </div>
         </div>
 
-        <!-- Documento Visual do Extrato Bancário -->
-        <div id="bankStatementPreviewCard" class="bg-white rounded-xl border border-slate-300 shadow-sm p-5 sm:p-7">
-          <!-- Renderizado dinamicamente via JS -->
-        </div>
+        <div id="bankStatementPreviewCard" class="bg-white rounded-xl border border-slate-300 shadow-sm p-5 sm:p-7"></div>
       </div>
     </div>
   </div>
@@ -779,7 +762,6 @@
         <input type="hidden" id="entryId" />
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <!-- Mês de Competência -->
           <div>
             <label for="entryMonth" class="block text-xs font-semibold text-slate-700 mb-1">Mês de Referência</label>
             <select id="entryMonth" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:border-vega-600">
@@ -789,14 +771,12 @@
             </select>
           </div>
 
-          <!-- Data -->
           <div>
             <label for="entryDate" class="block text-xs font-semibold text-slate-700 mb-1">Data do Movimento</label>
             <input type="date" id="entryDate" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:border-vega-600" />
           </div>
         </div>
 
-        <!-- Descrição -->
         <div>
           <label for="entryDescription" class="block text-xs font-semibold text-slate-700 mb-1">Descrição do Lançamento</label>
           <input
@@ -809,7 +789,6 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <!-- Tipo -->
           <div>
             <label for="entryType" class="block text-xs font-semibold text-slate-700 mb-1">Tipo de Operação</label>
             <select id="entryType" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:border-vega-600">
@@ -818,7 +797,6 @@
             </select>
           </div>
 
-          <!-- Classificação -->
           <div>
             <label for="entryCategory" class="block text-xs font-semibold text-slate-700 mb-1">Classificação / Categoria</label>
             <select id="entryCategory" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:border-vega-600">
@@ -836,7 +814,6 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <!-- Forma de Pagamento -->
           <div>
             <label for="entryPayment" class="block text-xs font-semibold text-slate-700 mb-1">Forma de Pagamento</label>
             <select id="entryPayment" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:border-vega-600">
@@ -849,7 +826,6 @@
             </select>
           </div>
 
-          <!-- Valor -->
           <div>
             <label for="entryAmount" class="block text-xs font-semibold text-slate-700 mb-1">Valor (R$)</label>
             <input
@@ -907,18 +883,20 @@
     /**
      * ============================================================================
      * SIMULADOR DE FLUXO DE CAIXA — VEGA CALÇADOS E ACESSÓRIOS
-     * Com Sincronização em Nuvem (Firebase Realtime Database), Exportação PDF (A4)
-     * e Portal Bancário Protegido por Senha (sec2026)
+     * Sincronização em Tempo Real (Firebase) + Importação de Backup (.json)
      * ============================================================================
      */
 
     const FIREBASE_DB_URL = 'https://fluxo-53342-default-rtdb.firebaseio.com';
-    const STORAGE_KEY_ENTRIES = 'vega_calcados_fluxo_entries_v1';
-    const STORAGE_KEY_INITIAL = 'vega_calcados_fluxo_initial_v1';
+    const STORAGE_KEY_ENTRIES = 'vega_calcados_fluxo_entries_v2';
+    const STORAGE_KEY_INITIAL = 'vega_calcados_fluxo_initial_v2';
     const DEFAULT_INITIAL_BALANCE = 28500.00;
     const BANK_PORTAL_PASSWORD = 'sec2026';
 
     let syncDebounceTimer = null;
+    let pollingInterval = null;
+    let isSyncingNow = false;
+    let lastCloudFingerprint = '';
 
     let state = {
       activeTab: '2026-09',
@@ -964,6 +942,27 @@
       return `${d}/${m}`;
     }
 
+    function setCloudStatus(status, customLabel = '') {
+      const badge = document.getElementById('cloudStatusBadge');
+      const dot = document.getElementById('cloudStatusDot');
+      const text = document.getElementById('cloudStatusText');
+      if (!badge || !dot || !text) return;
+
+      if (status === 'connected') {
+        badge.className = 'no-print inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/35 hover:bg-emerald-500/30 transition cursor-pointer';
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+        text.textContent = customLabel || 'Nuvem Sincronizada';
+      } else if (status === 'syncing') {
+        badge.className = 'no-print inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/35 transition cursor-pointer';
+        dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping';
+        text.textContent = customLabel || 'Sincronizando...';
+      } else {
+        badge.className = 'no-print inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold rounded-full bg-rose-500/25 text-rose-200 border border-rose-400/40 hover:bg-rose-500/35 transition cursor-pointer';
+        dot.className = 'w-2 h-2 rounded-full bg-rose-400';
+        text.textContent = customLabel || 'Sem conexão com Firebase';
+      }
+    }
+
     function showToast(message, type = 'success') {
       const container = document.getElementById('toastContainer');
       const toast = document.createElement('div');
@@ -971,7 +970,7 @@
         ? 'bg-emerald-800 text-white border-emerald-600'
         : type === 'warning'
         ? 'bg-amber-700 text-white border-amber-500'
-        : 'bg-slate-800 text-white border-slate-600';
+        : 'bg-rose-800 text-white border-rose-600';
 
       toast.className = `${colors} border px-4 py-3 rounded-xl shadow-lg text-xs sm:text-sm font-medium flex items-center gap-2 pointer-events-auto transition-all duration-300`;
       toast.innerHTML = `
@@ -983,7 +982,7 @@
         toast.style.opacity = '0';
         toast.style.transform = 'translateY(8px)';
         setTimeout(() => toast.remove(), 300);
-      }, 3200);
+      }, 3400);
     }
 
     function openConfirmModal(title, message, onConfirm) {
@@ -1007,7 +1006,7 @@
 
     /**
      * ============================================================================
-     * BASE REALISTA DE DADOS (54 a 56 LANÇAMENTOS POR MÊS)
+     * BASE REALISTA DE DADOS PADRÃO (CASO NUVEM ESTEJA VAZIA)
      * ============================================================================
      */
     function generateDefaultDataset() {
@@ -1028,7 +1027,7 @@
         });
       };
 
-      // SETEMBRO / 2026 (54 Lançamentos)
+      // SETEMBRO / 2026
       const m09 = '2026-09';
       add(m09, 1, 'Vendas Loja Física — Balcão (Pix/Débito)', 'Entrada', 'Receita de Vendas', 'Pix', 3420.00);
       add(m09, 1, 'Aluguel Loja Comercial + Condomínio Shopping', 'Saída', 'Despesa Fixa', 'Boleto', 6850.00);
@@ -1085,7 +1084,7 @@
       add(m09, 30, 'Monitoramento Alarme e Segurança Patrimonial', 'Saída', 'Despesa Fixa', 'Boleto', 260.00);
       add(m09, 30, 'Rendimentos Aplicação Automática Conta PJ', 'Entrada', 'Outras Receitas', 'Transferência/TED', 340.00);
 
-      // OUTUBRO / 2026 (54 Lançamentos)
+      // OUTUBRO / 2026
       const m10 = '2026-10';
       add(m10, 1, 'Vendas Loja Física — Abertura Mês das Crianças', 'Entrada', 'Receita de Vendas', 'Pix', 3920.00);
       add(m10, 1, 'Aluguel Loja Comercial + Condomínio Shopping', 'Saída', 'Despesa Fixa', 'Boleto', 6850.00);
@@ -1142,7 +1141,7 @@
       add(m10, 31, 'Fornecedor Acessórios, Cintos e Kits Presente', 'Saída', 'Fornecedores / CMV', 'Boleto', 1890.00);
       add(m10, 31, 'Rendimentos Aplicação Automática Conta PJ', 'Entrada', 'Outras Receitas', 'Transferência/TED', 410.00);
 
-      // NOVEMBRO / 2026 (56 Lançamentos)
+      // NOVEMBRO / 2026
       const m11 = '2026-11';
       add(m11, 1, 'Aluguel Loja Comercial + Condomínio Shopping', 'Saída', 'Despesa Fixa', 'Boleto', 6850.00);
       add(m11, 2, 'Vendas Loja Física — Abertura Novembro', 'Entrada', 'Receita de Vendas', 'Pix', 4150.00);
@@ -1206,11 +1205,164 @@
 
     /**
      * ============================================================================
-     * PERSISTÊNCIA LOCAL + SINCRONIZAÇÃO EM NUVEM (FIREBASE)
+     * NORMALIZAÇÃO E SINCRONIZAÇÃO INTELIGENTE COM FIREBASE + BACKUP JSON
      * ============================================================================
      */
+    function normalizeCloudPayload(rawData) {
+      if (!rawData || typeof rawData !== 'object') return null;
+
+      // Aceita tanto o formato direto { entries, initialBalance } quanto o export { vega_fluxo: { ... } }
+      const root = rawData.vega_fluxo && typeof rawData.vega_fluxo === 'object'
+        ? rawData.vega_fluxo
+        : rawData;
+
+      let extractedEntries = [];
+      if (Array.isArray(root.entries)) {
+        extractedEntries = root.entries.filter(Boolean);
+      } else if (root.entries && typeof root.entries === 'object') {
+        extractedEntries = Object.values(root.entries).filter(Boolean);
+      } else if (root.entriesById && typeof root.entriesById === 'object') {
+        extractedEntries = Object.values(root.entriesById).filter(Boolean);
+      }
+
+      if (extractedEntries.length === 0) return null;
+
+      const cleanEntries = extractedEntries.map(item => ({
+        id: String(item.id || `vega-custom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`),
+        month: String(item.month || (item.date ? item.date.slice(0, 7) : '2026-09')),
+        date: String(item.date || '2026-09-01'),
+        description: String(item.description || 'Lançamento'),
+        type: item.type === 'Saída' ? 'Saída' : 'Entrada',
+        category: String(item.category || 'Receita de Vendas'),
+        payment: String(item.payment || 'Pix'),
+        amount: Number(parseFloat(item.amount || 0).toFixed(2))
+      }));
+
+      const parsedInit = parseFloat(root.initialBalance);
+      const cleanInit = !isNaN(parsedInit) ? parsedInit : DEFAULT_INITIAL_BALANCE;
+
+      return {
+        initialBalance: cleanInit,
+        entries: cleanEntries,
+        updatedAt: root.updatedAt || ''
+      };
+    }
+
+    function saveLocalCache() {
+      try {
+        localStorage.setItem(STORAGE_KEY_INITIAL, String(state.initialBalance));
+        localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(state.entries));
+      } catch (err) {
+        console.warn('Armazenamento local indisponível:', err);
+      }
+    }
+
+    async function fetchFromCloud(silent = true) {
+      if (isSyncingNow) return;
+      isSyncingNow = true;
+
+      if (!silent) setCloudStatus('syncing', 'Buscando da Nuvem...');
+
+      try {
+        // Parâmetro ?t= evita cache do navegador e do modo anônimo
+        const url = `${FIREBASE_DB_URL}/vega_fluxo.json?t=${Date.now()}`;
+        const response = await fetch(url, { cache: 'no-store' });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const rawJson = await response.json();
+        const normalized = normalizeCloudPayload(rawJson);
+
+        if (normalized && normalized.entries.length > 0) {
+          const fingerprint = JSON.stringify({
+            i: normalized.initialBalance,
+            e: normalized.entries
+          });
+
+          if (fingerprint !== lastCloudFingerprint) {
+            lastCloudFingerprint = fingerprint;
+            state.initialBalance = normalized.initialBalance;
+            state.entries = normalized.entries;
+            saveLocalCache();
+            render();
+            if (!silent) {
+              showToast(`Dados sincronizados (${state.entries.length} lançamentos carregados)!`);
+            }
+          } else if (!silent) {
+            showToast('Tudo já está atualizado com a nuvem!');
+          }
+
+          const nowStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          setCloudStatus('connected', `Nuvem OK (${nowStr})`);
+        } else {
+          // Banco vazio no Firebase: envia os dados atuais para inicializar
+          await pushFullStateToCloud();
+        }
+      } catch (err) {
+        console.warn('Falha na leitura do Firebase:', err);
+        const reason = err.message && err.message.includes('401')
+          ? 'Bloqueado (Regra Firebase)'
+          : 'Offline / Erro Nuvem';
+        setCloudStatus('error', reason);
+        if (!silent) {
+          showToast('Não foi possível conectar ao Firebase. Use "Importar Backup (.json)" se precisar carregar um arquivo.', 'error');
+        }
+      } finally {
+        isSyncingNow = false;
+      }
+    }
+
+    async function pushFullStateToCloud() {
+      setCloudStatus('syncing', 'Salvando na Nuvem...');
+      try {
+        const payload = {
+          initialBalance: state.initialBalance,
+          entries: state.entries,
+          updatedAt: new Date().toISOString()
+        };
+
+        const response = await fetch(`${FIREBASE_DB_URL}/vega_fluxo.json`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        lastCloudFingerprint = JSON.stringify({
+          i: state.initialBalance,
+          e: state.entries
+        });
+
+        const nowStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        setCloudStatus('connected', `Salvo na Nuvem (${nowStr})`);
+        return true;
+      } catch (err) {
+        console.error('Erro ao salvar no Firebase:', err);
+        setCloudStatus('error', 'Erro ao salvar na nuvem');
+        showToast('Aviso: salvo apenas neste PC (falha ao enviar para o Firebase).', 'warning');
+        return false;
+      }
+    }
+
+    function saveState(immediateCloud = true) {
+      saveLocalCache();
+
+      if (immediateCloud) {
+        clearTimeout(syncDebounceTimer);
+        pushFullStateToCloud();
+      } else {
+        clearTimeout(syncDebounceTimer);
+        syncDebounceTimer = setTimeout(() => {
+          pushFullStateToCloud();
+        }, 600);
+      }
+    }
+
     async function loadState() {
-      // 1. Carrega primeiro do armazenamento local para abertura imediata
+      // 1. Carrega cache local se existir
       try {
         const savedInitial = localStorage.getItem(STORAGE_KEY_INITIAL);
         const savedEntries = localStorage.getItem(STORAGE_KEY_ENTRIES);
@@ -1225,71 +1377,54 @@
           state.entries = generateDefaultDataset();
         }
       } catch (err) {
-        console.error('Erro ao carregar dados locais:', err);
         state.initialBalance = DEFAULT_INITIAL_BALANCE;
         state.entries = generateDefaultDataset();
       }
 
       render();
 
-      // 2. Sincroniza com o Firebase Realtime Database para manter dados entre dispositivos
-      try {
-        const response = await fetch(`${FIREBASE_DB_URL}/vega_fluxo.json`);
-        if (!response.ok) throw new Error('Falha ao consultar nuvem');
+      // 2. Busca imediatamente os dados reais da nuvem (Firebase)
+      await fetchFromCloud(true);
 
-        const cloudData = await response.json();
-
-        if (cloudData && Array.isArray(cloudData.entries) && cloudData.entries.length > 0) {
-          const cloudInit = parseFloat(cloudData.initialBalance);
-          state.initialBalance = !isNaN(cloudInit) ? cloudInit : DEFAULT_INITIAL_BALANCE;
-          state.entries = cloudData.entries;
-
-          localStorage.setItem(STORAGE_KEY_INITIAL, String(state.initialBalance));
-          localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(state.entries));
-          render();
-        } else {
-          // Primeira execução: envia os dados iniciais para o Firebase
-          await syncToCloud();
+      // 3. Mantém verificação automática a cada 5 segundos para pegar alterações de outras alunas
+      if (pollingInterval) clearInterval(pollingInterval);
+      pollingInterval = setInterval(() => {
+        if (!document.hidden) {
+          fetchFromCloud(true);
         }
-      } catch (err) {
-        console.warn('Sincronização em nuvem indisponível no momento (usando cache local):', err);
-      }
+      }, 5000);
     }
 
-    async function syncToCloud() {
-      try {
-        await fetch(`${FIREBASE_DB_URL}/vega_fluxo.json`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            initialBalance: state.initialBalance,
-            entries: state.entries,
-            updatedAt: new Date().toISOString()
-          })
-        });
-      } catch (err) {
-        console.error('Erro ao enviar dados para o Firebase:', err);
-      }
-    }
+    function handleJsonBackupImport(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const parsedJson = JSON.parse(event.target.result);
+          const normalized = normalizeCloudPayload(parsedJson);
 
-    function saveState(immediateCloud = true) {
-      try {
-        localStorage.setItem(STORAGE_KEY_INITIAL, String(state.initialBalance));
-        localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(state.entries));
-      } catch (err) {
-        console.error('Erro ao salvar dados localmente:', err);
-      }
+          if (!normalized || normalized.entries.length === 0) {
+            showToast('Arquivo JSON inválido ou sem lançamentos encontrados.', 'error');
+            return;
+          }
 
-      if (immediateCloud) {
-        clearTimeout(syncDebounceTimer);
-        syncToCloud();
-      } else {
-        // Evita excesso de requisições enquanto digita no campo de saldo inicial
-        clearTimeout(syncDebounceTimer);
-        syncDebounceTimer = setTimeout(() => {
-          syncToCloud();
-        }, 600);
-      }
+          state.initialBalance = normalized.initialBalance;
+          state.entries = normalized.entries;
+          saveLocalCache();
+          render();
+
+          const synced = await pushFullStateToCloud();
+          if (synced) {
+            showToast(`Backup importado (${state.entries.length} lançamentos) e enviado para a nuvem!`);
+          } else {
+            showToast(`Backup carregado na tela (${state.entries.length} lançamentos)!`, 'warning');
+          }
+        } catch (err) {
+          console.error('Erro ao ler JSON:', err);
+          showToast('Erro ao ler o arquivo JSON. Verifique se é o backup do Firebase.', 'error');
+        }
+      };
+      reader.readAsText(file);
     }
 
     function calculateAllMonthsSummary() {
@@ -1418,7 +1553,6 @@
         renderTable(currentData);
       }
 
-      // Atualiza automaticamente o extrato bancário caso o modal esteja aberto ou para próxima abertura
       if (state.bankUnlocked) {
         renderBankPortal(summary);
       }
@@ -1537,9 +1671,14 @@
 
       tbody.innerHTML = filtered.map(row => {
         const isIn = row.type === 'Entrada';
+        const isCustom = String(row.id).startsWith('vega-custom-');
         const typeBadge = isIn
           ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">+ Entrada</span>`
           : `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800">- Saída</span>`;
+
+        const customBadge = isCustom
+          ? `<span class="ml-1.5 inline-block px-1.5 py-0.5 text-[10px] font-bold rounded bg-amber-100 text-amber-800 border border-amber-300" title="Lançamento adicionado manualmente">Novo</span>`
+          : '';
 
         const catStyle = getCategoryBadgeStyle(row.category);
         const amountClass = isIn ? 'text-emerald-600 font-bold' : 'text-rose-600 font-bold';
@@ -1548,7 +1687,7 @@
         return `
           <tr class="hover:bg-slate-50/90 transition group">
             <td class="py-3 px-4 whitespace-nowrap text-slate-600 font-medium">${formatDateBR(row.date)}</td>
-            <td class="py-3 px-4 text-slate-800 font-medium">${escapeHtml(row.description)}</td>
+            <td class="py-3 px-4 text-slate-800 font-medium">${escapeHtml(row.description)}${customBadge}</td>
             <td class="py-3 px-4 whitespace-nowrap">${typeBadge}</td>
             <td class="py-3 px-4 whitespace-nowrap">
               <span class="inline-block px-2.5 py-0.5 rounded-lg text-xs font-medium border ${catStyle}">
@@ -1706,7 +1845,7 @@
 
     /**
      * ============================================================================
-     * SISTEMA DE EXPORTAÇÃO PDF (FOLHA A4) DO PAINEL PRINCIPAL
+     * EXPORTAÇÃO PDF (FOLHA A4) & PORTAL BANCÁRIO PJ
      * ============================================================================
      */
     function exportSystemReportToPdfA4() {
@@ -1723,11 +1862,6 @@
       }, 120);
     }
 
-    /**
-     * ============================================================================
-     * PORTAL BANCÁRIO EMPRESARIAL (BLOQUEADO POR SENHA) & EXTRATO PDF REALISTA
-     * ============================================================================
-     */
     function handleOpenBankPortalClick() {
       if (state.bankUnlocked) {
         openBankPortalModal();
@@ -1750,7 +1884,6 @@
     }
 
     function openBankPortalModal() {
-      // Sincroniza o mês do extrato com a aba mensal ativa (ou Nov/2026 se estiver no consolidado)
       if (['2026-09', '2026-10', '2026-11'].includes(state.activeTab)) {
         state.bankSelectedMonth = state.activeTab;
       }
@@ -1813,7 +1946,6 @@
 
       return `
         <div class="${isForPrint ? 'p-1' : ''} text-slate-900">
-          <!-- Cabeçalho Oficial do Banco -->
           <div class="flex items-start justify-between border-b-2 border-[#0d2747] pb-3.5 mb-4">
             <div class="flex items-center gap-3">
               <div class="w-11 h-11 rounded-lg bg-[#0d2747] text-white flex items-center justify-center font-extrabold text-lg tracking-tighter">
@@ -1831,7 +1963,6 @@
             </div>
           </div>
 
-          <!-- Bloco de Dados Cadastrais da Empresa -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 border border-slate-200 rounded-lg p-3 mb-4 text-xs">
             <div>
               <span class="block text-[10px] uppercase font-bold text-slate-400">Razão Social</span>
@@ -1851,7 +1982,6 @@
             </div>
           </div>
 
-          <!-- Tabela de Movimentações Bancárias -->
           <table class="w-full text-left border-collapse border border-slate-300 mb-4">
             <thead>
               <tr class="bg-[#0d2747] text-white text-[10px] font-mono uppercase tracking-wider">
@@ -1863,7 +1993,6 @@
               </tr>
             </thead>
             <tbody>
-              <!-- Linha de Saldo Anterior -->
               <tr class="bg-slate-100 border-b border-slate-300 font-mono text-[11px]">
                 <td class="py-2 px-2 text-slate-600">01/${monthData.month.slice(5, 7)}/26</td>
                 <td class="py-2 px-2 text-slate-400">0000000</td>
@@ -1874,7 +2003,6 @@
 
               ${rowsHtml}
 
-              <!-- Linha de Saldo Final -->
               <tr class="bg-slate-100 border-t-2 border-[#0d2747] font-mono text-[11px]">
                 <td class="py-2 px-2 text-slate-700 font-bold">FECHAMENTO</td>
                 <td class="py-2 px-2 text-slate-400">9999999</td>
@@ -1885,7 +2013,6 @@
             </tbody>
           </table>
 
-          <!-- Quadro Resumo Financeiro do Extrato -->
           <div class="grid grid-cols-4 gap-2.5 border border-slate-300 rounded-lg p-3 bg-slate-50 font-mono text-xs mb-3">
             <div>
               <span class="block text-[10px] text-slate-500 uppercase">Saldo Anterior</span>
@@ -1905,7 +2032,6 @@
             </div>
           </div>
 
-          <!-- Rodapé de Autenticação Bancária -->
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-[10px] font-mono text-slate-500 pt-2 border-t border-slate-200">
             <span>Autenticação Eletrônica: <strong class="text-slate-700">${authHash}</strong></span>
             <span>SAC VegaBank Empresas: 0800 729 2026 • Documento conferido com o Fluxo de Caixa</span>
@@ -2055,13 +2181,32 @@
     document.addEventListener('DOMContentLoaded', () => {
       loadState();
 
-      // Restaura o modo padrão de impressão após fechar o diálogo de impressão do navegador
+      // Atualiza automaticamente ao clicar no selo de status da nuvem ou ao voltar para a aba
+      document.getElementById('cloudStatusBadge').addEventListener('click', () => {
+        fetchFromCloud(false);
+      });
+
+      window.addEventListener('focus', () => {
+        fetchFromCloud(true);
+      });
+
+      // Importação manual de arquivo .json de backup
+      const jsonInput = document.getElementById('jsonFileInput');
+      document.getElementById('btnImportJson').addEventListener('click', () => {
+        jsonInput.value = '';
+        jsonInput.click();
+      });
+      jsonInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          handleJsonBackupImport(e.target.files[0]);
+        }
+      });
+
       window.addEventListener('afterprint', () => {
         document.body.classList.remove('print-mode-statement');
         document.body.classList.add('print-mode-system');
       });
 
-      // Navegação entre abas
       document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           state.activeTab = btn.getAttribute('data-tab');
@@ -2069,7 +2214,6 @@
         });
       });
 
-      // Alteração do Saldo Pressuposto Inicial
       document.getElementById('initialBalanceInput').addEventListener('input', (e) => {
         const val = parseFloat(e.target.value);
         state.initialBalance = isNaN(val) ? 0 : val;
@@ -2077,10 +2221,8 @@
         render();
       });
 
-      // Botão Salvar PDF (A4) do Sistema
       document.getElementById('btnExportPdfSystem').addEventListener('click', exportSystemReportToPdfA4);
 
-      // Eventos do Portal Bancário PJ e Senha (sec2026)
       document.getElementById('btnOpenBankPortal').addEventListener('click', handleOpenBankPortalClick);
       document.getElementById('btnClosePassModal').addEventListener('click', closeBankPasswordModal);
       document.getElementById('btnCancelPassModal').addEventListener('click', closeBankPasswordModal);
@@ -2121,7 +2263,6 @@
 
       document.getElementById('btnPrintBankStatement').addEventListener('click', printBankStatementPdfA4);
 
-      // Botões Abrir Modal de Lançamento
       document.getElementById('btnNewEntryHeader').addEventListener('click', openNewModal);
       document.getElementById('btnNewEntryTable').addEventListener('click', openNewModal);
       document.getElementById('btnCloseModal').addEventListener('click', closeEntryModal);
@@ -2177,7 +2318,6 @@
         render();
       });
 
-      // Filtros da Tabela
       document.getElementById('filterSearch').addEventListener('input', (e) => {
         state.filters.search = e.target.value;
         render();
